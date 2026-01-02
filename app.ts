@@ -140,12 +140,35 @@ class FormValidator {
         this.successMsg.classList.remove('show');
     }
 
+    private setupPasswordToggle(fieldId: string, toggleId: string): void {
+        const input = document.getElementById(fieldId) as HTMLInputElement;
+        const toggle = document.getElementById(toggleId) as HTMLSpanElement;
+        
+        if (input && toggle) {
+            toggle.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                input.type = 'text';
+            });
+
+            toggle.addEventListener('mouseup', () => {
+                input.type = 'password';
+            });
+
+            toggle.addEventListener('mouseleave', () => {
+                input.type = 'password';
+            });
+        }
+    }
+
     private init(): void {
         this.form.addEventListener('submit', e => this.handleSubmit(e));
         this.fields.forEach(field => {
             this.getInput(field).addEventListener('blur', () => this.validateField(field));
             this.getInput(field).addEventListener('input', () => this.clearError(field));
         });
+        
+        this.setupPasswordToggle('password', 'passwordToggle');
+        this.setupPasswordToggle('confirmPassword', 'confirmPasswordToggle');
     }
 }
 
