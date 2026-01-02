@@ -12,7 +12,8 @@ class FormValidator {
             ],
             email: [
                 { validate: v => v.trim().length > 0, message: 'Email is required' },
-                { validate: v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()), message: 'Please enter a valid email address' }
+                { validate: v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()), message: 'Please enter a valid email address' },
+                { validate: v => !this.isEmailRegistered(v.trim()), message: 'This email is already registered' }
             ],
             password: [
                 { validate: v => v.length > 0, message: 'Password is required' },
@@ -30,12 +31,25 @@ class FormValidator {
         this.init();
     }
     getInput(field) {
-        const id = field === 'confirmPassword' ? 'confirmPassword' : field;
-        return document.getElementById(id);
+        return document.getElementById(field);
     }
     getError(field) {
-        const id = field === 'confirmPassword' ? 'confirmPasswordError' : `${field}Error`;
-        return document.getElementById(id);
+        return document.getElementById(`${field}Error`);
+    }
+    isEmailRegistered(email) {
+        const registeredEmails = this.getRegisteredEmails();
+        return registeredEmails.includes(email.toLowerCase());
+    }
+    getRegisteredEmails() {
+        const stored = localStorage.getItem('registeredEmails');
+        return stored ? JSON.parse(stored) : [];
+    }
+    saveEmail(email) {
+        const registeredEmails = this.getRegisteredEmails();
+        if (!registeredEmails.includes(email.toLowerCase())) {
+            registeredEmails.push(email.toLowerCase());
+            localStorage.setItem('registeredEmails', JSON.stringify(registeredEmails));
+        }
     }
     getFormData() {
         return {
@@ -75,6 +89,7 @@ class FormValidator {
         this.successMsg.classList.remove('show');
         if (this.validateAll()) {
             const data = this.getFormData();
+            this.saveEmail(data.email);
             this.successMsg.textContent = `Registration successful! Welcome, ${data.name}!`;
             this.successMsg.classList.add('show');
             console.log('Form submitted:', {

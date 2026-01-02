@@ -1,7 +1,14 @@
 type FieldName = 'name' | 'email' | 'password' | 'confirmPassword';
 
+interface FormFields {
+    name: string;
+    email: string;
+    password: string;
+    confirmPassword: string;
+}
+
 interface ValidationRule {
-    validate: (value: string, formData?: Record<FieldName, string>) => boolean;
+    validate: (value: string, formData?: FormFields) => boolean;
     message: string;
 }
 
@@ -9,7 +16,7 @@ class FormValidator {
     private fields: FieldName[] = ['name', 'email', 'password', 'confirmPassword'];
     private form = document.getElementById('registrationForm') as HTMLFormElement;
     private successMsg = document.getElementById('successMessage') as HTMLDivElement;
-    private rules: Record<FieldName, ValidationRule[]>;
+    private rules: { [K in FieldName]: ValidationRule[] };
 
     constructor() {
         this.rules = {
@@ -20,7 +27,8 @@ class FormValidator {
             ],
             email: [
                 { validate: v => v.trim().length > 0, message: 'Email is required' },
-                { validate: v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()), message: 'Please enter a valid email address' }
+                { validate: v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()), message: 'Please enter a valid email address' },
+                { validate: v => !this.isEmailRegistered(v.trim()), message: 'This email is already registered' }
             ],
             password: [
                 { validate: v => v.length > 0, message: 'Password is required' },
@@ -39,16 +47,32 @@ class FormValidator {
     }
 
     private getInput(field: FieldName): HTMLInputElement {
-        const id = field === 'confirmPassword' ? 'confirmPassword' : field;
-        return document.getElementById(id) as HTMLInputElement;
+        return document.getElementById(field) as HTMLInputElement;
     }
 
     private getError(field: FieldName): HTMLSpanElement {
-        const id = field === 'confirmPassword' ? 'confirmPasswordError' : `${field}Error`;
-        return document.getElementById(id) as HTMLSpanElement;
+        return document.getElementById(`${field}Error`) as HTMLSpanElement;
     }
 
-    private getFormData(): Record<FieldName, string> {
+    private isEmailRegistered(email: string): boolean {
+        const registeredEmails = this.getRegisteredEmails();
+        return registeredEmails.includes(email.toLowerCase());
+    }
+
+    private getRegisteredEmails(): string[] {
+        const stored = localStorage.getItem('registeredEmails');
+        return stored ? JSON.parse(stored) : [];
+    }
+
+    private saveEmail(email: string): void {
+        const registeredEmails = this.getRegisteredEmails();
+        if (!registeredEmails.includes(email.toLowerCase())) {
+            registeredEmails.push(email.toLowerCase());
+            localStorage.setItem('registeredEmails', JSON.stringify(registeredEmails));
+        }
+    }
+
+    private getFormData(): FormFields {
         return {
             name: this.getInput('name').value,
             email: this.getInput('email').value,
@@ -93,6 +117,7 @@ class FormValidator {
 
         if (this.validateAll()) {
             const data = this.getFormData();
+            this.saveEmail(data.email);
             this.successMsg.textContent = `Registration successful! Welcome, ${data.name}!`;
             this.successMsg.classList.add('show');
             
